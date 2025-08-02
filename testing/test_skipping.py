@@ -679,6 +679,22 @@ class TestSkipif:
         result.stdout.fnmatch_lines(["*SKIP*1*test_foo.py*platform*", "*1 skipped*"])
         assert result.ret == 0
 
+    @pytest.mark.parametrize(
+        "params", ["\"hasattr(sys, 'platform')\"", 'True, reason="invalid platform"']
+    )
+    def test_skipif_location_with_runxfail(self, testdir, params):
+        p = testdir.makepyfile(
+            test_foo="""
+            import pytest, sys
+            @pytest.mark.skipif(%(params)s)
+            def test_that():
+                assert 0
+            """ % dict(params=params)
+        )
+        result = testdir.runpytest(p, "-s", "-rs", "--runxfail")
+        result.stdout.fnmatch_lines(["*SKIP*1*test_foo.py*:3*", "*1 skipped*"])
+        assert result.ret == 0
+
     def test_skipif_using_platform(self, testdir):
         item = testdir.getitem(
             """

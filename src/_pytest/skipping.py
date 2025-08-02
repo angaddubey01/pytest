@@ -270,8 +270,24 @@ def pytest_runtest_makereport(item: Item, call: CallInfo[None]):
         else:
             rep.longrepr = "Unexpected success"
         rep.outcome = "failed"
+
+
+    elif (
+        item._store.get(skipped_by_mark_key, True)
+        and rep.skipped
+        and type(rep.longrepr) is tuple
+    ):
+        # skipped by mark.skipif; change the location of the failure
+        # to point to the item definition, otherwise it will display
+        # the location of where the skip exception was raised within pytest
+        _, _, reason = rep.longrepr
+        filename, line = item.reportinfo()[:2]
+        assert line is not None
+        rep.longrepr = str(filename), line + 1, reason
+
     elif item.config.option.runxfail:
         pass  # don't interfere
+
     elif call.excinfo and isinstance(call.excinfo.value, xfail.Exception):
         assert call.excinfo.value.msg is not None
         rep.wasxfail = "reason: " + call.excinfo.value.msg
@@ -291,18 +307,6 @@ def pytest_runtest_makereport(item: Item, call: CallInfo[None]):
             else:
                 rep.outcome = "passed"
                 rep.wasxfail = xfailed.reason
-    elif (
-        item._store.get(skipped_by_mark_key, True)
-        and rep.skipped
-        and type(rep.longrepr) is tuple
-    ):
-        # skipped by mark.skipif; change the location of the failure
-        # to point to the item definition, otherwise it will display
-        # the location of where the skip exception was raised within pytest
-        _, _, reason = rep.longrepr
-        filename, line = item.reportinfo()[:2]
-        assert line is not None
-        rep.longrepr = str(filename), line + 1, reason
 
 
 def pytest_report_teststatus(report: BaseReport) -> Optional[Tuple[str, str, str]]:
