@@ -425,6 +425,23 @@ class TestXFail:
         result = testdir.runpytest(p)
         result.stdout.fnmatch_lines(["*1 xfailed*"])
 
+    def test_dynamic_xfail_mark_in_test_body(self, testdir):
+        p = testdir.makepyfile(
+            '''
+import pytest
+
+def test_xfail(request):
+    mark = pytest.mark.xfail(reason="xfail")
+    request.node.add_marker(mark)
+    assert False
+'''
+        )
+        result = testdir.runpytest(p, "-rxX")
+        result.stdout.fnmatch_lines([
+            "*XFAIL*test_xfail*",
+            "*reason:*xfail*",
+        ])
+
     @pytest.mark.parametrize(
         "expected, actual, matchline",
         [
