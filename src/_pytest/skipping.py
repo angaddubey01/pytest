@@ -270,35 +270,33 @@ def pytest_runtest_makereport(item: Item, call: CallInfo[None]):
         else:
             rep.longrepr = "Unexpected success"
         rep.outcome = "failed"
-    elif item.config.option.runxfail:
-        pass  # don't interfere
-    elif call.excinfo and isinstance(call.excinfo.value, xfail.Exception):
-        assert call.excinfo.value.msg is not None
-        rep.wasxfail = "reason: " + call.excinfo.value.msg
-        rep.outcome = "skipped"
-    elif not rep.skipped and xfailed:
-        if call.excinfo:
-            raises = xfailed.raises
-            if raises is not None and not isinstance(call.excinfo.value, raises):
-                rep.outcome = "failed"
-            else:
+    else:
+        if not item.config.option.runxfail:
+            if call.excinfo and isinstance(call.excinfo.value, xfail.Exception):
+                assert call.excinfo.value.msg is not None
+                rep.wasxfail = "reason: " + call.excinfo.value.msg
                 rep.outcome = "skipped"
-                rep.wasxfail = xfailed.reason
-        elif call.when == "call":
-            if xfailed.strict:
-                rep.outcome = "failed"
-                rep.longrepr = "[XPASS(strict)] " + xfailed.reason
-            else:
-                rep.outcome = "passed"
-                rep.wasxfail = xfailed.reason
-    elif (
+            elif not rep.skipped and xfailed:
+                if call.excinfo:
+                    raises = xfailed.raises
+                    if raises is not None and not isinstance(call.excinfo.value, raises):
+                        rep.outcome = "failed"
+                    else:
+                        rep.outcome = "skipped"
+                        rep.wasxfail = xfailed.reason
+                elif call.when == "call":
+                    if xfailed.strict:
+                        rep.outcome = "failed"
+                        rep.longrepr = "[XPASS(strict)] " + xfailed.reason
+                    else:
+                        rep.outcome = "passed"
+                        rep.wasxfail = xfailed.reason
+
+    if (
         item._store.get(skipped_by_mark_key, True)
         and rep.skipped
         and type(rep.longrepr) is tuple
     ):
-        # skipped by mark.skipif; change the location of the failure
-        # to point to the item definition, otherwise it will display
-        # the location of where the skip exception was raised within pytest
         _, _, reason = rep.longrepr
         filename, line = item.reportinfo()[:2]
         assert line is not None

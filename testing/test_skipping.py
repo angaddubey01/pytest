@@ -1205,3 +1205,20 @@ def test_relpath_rootdir(testdir):
     result.stdout.fnmatch_lines(
         ["SKIPPED [[]1[]] tests/test_1.py:2: unconditional skip"]
     )
+
+
+def test_skip_location_with_runxfail(testdir):
+    p = testdir.makepyfile(
+        test_skip_location="""
+        import pytest
+        @pytest.mark.skip
+        def test_skip_location():
+            assert 0
+        """
+    )
+    result = testdir.runpytest(
+        "-rs", "--runxfail", "--assert=plain", "-W", "ignore::DeprecationWarning"
+    )
+    result.stdout.fnmatch_lines(
+        [f"SKIPPED [1] {p.basename}:2: unconditional skip"]
+    )
