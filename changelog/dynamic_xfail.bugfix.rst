@@ -1,0 +1,1 @@
+Fixed issue where dynamically adding xfail markers to tests during test execution (using ``request.node.add_marker(mark)``) no longer worked in pytest 6.0.
