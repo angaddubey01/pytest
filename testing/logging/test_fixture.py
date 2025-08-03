@@ -274,3 +274,27 @@ def test_log_report_captures_according_to_config_option_upon_failure(testdir):
         ["*Print message*", "*INFO log message*", "*WARNING log message*"]
     )
     assert result.ret == 1
+
+
+def test_restore_handler_level_between_tests(testdir):
+    testdir.makepyfile(
+        """
+        import logging
+
+        def test_first(caplog):
+            caplog.set_level(42)
+            assert caplog.handler.level == 42
+
+        def test_second(caplog):
+            assert caplog.handler.level == logging.NOTSET
+        """
+    )
+    testdir.makeini(
+        """
+        [pytest]
+        filterwarnings =
+            ignore::DeprecationWarning
+        """
+    )
+    result = testdir.runpytest("--assert=plain")
+    result.assert_outcomes(passed=2)

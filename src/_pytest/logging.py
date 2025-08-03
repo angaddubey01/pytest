@@ -287,7 +287,7 @@ _HandlerType = TypeVar("_HandlerType", bound=logging.Handler)
 class catching_logs:
     """Context manager that prepares the whole logging machinery properly."""
 
-    __slots__ = ("handler", "level", "orig_level")
+    __slots__ = ("handler", "level", "orig_level", "orig_handler_level")
 
     def __init__(self, handler: _HandlerType, level: Optional[int] = None) -> None:
         self.handler = handler
@@ -295,6 +295,7 @@ class catching_logs:
 
     def __enter__(self):
         root_logger = logging.getLogger()
+        self.orig_handler_level = self.handler.level
         if self.level is not None:
             self.handler.setLevel(self.level)
         root_logger.addHandler(self.handler)
@@ -305,9 +306,10 @@ class catching_logs:
 
     def __exit__(self, type, value, traceback):
         root_logger = logging.getLogger()
+        root_logger.removeHandler(self.handler)
+        self.handler.setLevel(self.orig_handler_level)
         if self.level is not None:
             root_logger.setLevel(self.orig_level)
-        root_logger.removeHandler(self.handler)
 
 
 class LogCaptureHandler(logging.StreamHandler):
