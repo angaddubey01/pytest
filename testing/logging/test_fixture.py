@@ -49,6 +49,22 @@ def test_change_level_undo(testdir):
     result.stdout.fnmatch_lines(["*log from test1*", "*2 failed in *"])
     result.stdout.no_fnmatch_line("*log from test2*")
 
+def test_set_level_restores_handler_level(testdir):
+    """Ensure that caplog handler level is restored after the end of the test"""
+    testdir.makepyfile(
+        """
+        def test1(caplog):
+            caplog.set_level(42)
+            assert 0
+
+        def test2(caplog):
+            print(caplog.handler.level)
+            assert 0
+        """
+    )
+    result = testdir.runpytest()
+    result.stdout.fnmatch_lines(["*0*"])
+
 
 def test_with_statement(caplog):
     with caplog.at_level(logging.INFO):
