@@ -346,6 +346,8 @@ class LogCaptureFixture:
         self._item = item
         # dict of log name -> log level
         self._initial_logger_levels = {}  # type: Dict[Optional[str], int]
+        # handler's initial level
+        self._initial_handler_level = None  # type: Optional[int]
 
     def _finalize(self) -> None:
         """Finalizes the fixture.
@@ -356,6 +358,10 @@ class LogCaptureFixture:
         for logger_name, level in self._initial_logger_levels.items():
             logger = logging.getLogger(logger_name)
             logger.setLevel(level)
+            
+        # restore handler level if it was changed
+        if self._initial_handler_level is not None:
+            self.handler.setLevel(self._initial_handler_level)
 
     @property
     def handler(self) -> LogCaptureHandler:
@@ -434,6 +440,10 @@ class LogCaptureFixture:
         # save the original log-level to restore it during teardown
         self._initial_logger_levels.setdefault(logger, logger_obj.level)
         logger_obj.setLevel(level)
+        
+        # save the handler's level if this is the first time we're changing it
+        if self._initial_handler_level is None:
+            self._initial_handler_level = self.handler.level
         self.handler.setLevel(level)
 
     @contextmanager
